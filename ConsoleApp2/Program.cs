@@ -1,9 +1,30 @@
 ﻿using System;
 using System.IO;
 
-public class FolderCleaner
+using System;
+using System.IO;
+
+public class FolderSizeCalculator
 {
-    private static readonly TimeSpan TimeLimit = TimeSpan.FromMinutes(30); // 30 минут
+    public static long CalculateFolderSize(string directoryPath)
+    {
+        long totalSize = 0;
+
+        
+        if (!Directory.Exists(directoryPath))
+        {
+            throw new ArgumentException("Папка не существует.");
+        }
+
+        
+        foreach (string filePath in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories))
+        {
+            FileInfo fileInfo = new FileInfo(filePath);
+            totalSize += fileInfo.Length;
+        }
+
+        return totalSize;
+    }
 
     public static void Main(string[] args)
     {
@@ -15,72 +36,14 @@ public class FolderCleaner
 
         string folderPath = args[0];
 
-        if (!Directory.Exists(folderPath))
-        {
-            Console.WriteLine($"Папка '{folderPath}' не найдена.");
-            return;
-        }
-
-        CleanFolder(folderPath);
-
-        Console.WriteLine($"Папка '{folderPath}' очищена.");
-    }
-
-    private static void CleanFolder(string folderPath)
-    {
-        foreach (string filePath in Directory.EnumerateFiles(folderPath))
-        {
-            if (IsFileOlderThanTimeLimit(filePath))
-            {
-                DeleteFile(filePath);
-                Console.WriteLine($"Удален файл: {filePath}");
-            }
-        }
-
-        foreach (string subFolderPath in Directory.EnumerateDirectories(folderPath))
-        {
-            CleanFolder(subFolderPath);
-
-            if (IsDirectoryEmpty(subFolderPath))
-            {
-                DeleteDirectory(subFolderPath);
-                Console.WriteLine($"Удалена папка: {subFolderPath}");
-            }
-        }
-    }
-
-    private static bool IsFileOlderThanTimeLimit(string filePath)
-    {
-        DateTime lastWriteTime = File.GetLastWriteTime(filePath);
-        return DateTime.Now - lastWriteTime > TimeLimit;
-    }
-
-    private static bool IsDirectoryEmpty(string directoryPath)
-    {
-        return !Directory.EnumerateFileSystemEntries(directoryPath).Any();
-    }
-
-    private static void DeleteFile(string filePath)
-    {
         try
         {
-            File.Delete(filePath);
+            long sizeInBytes = CalculateFolderSize(folderPath);
+            Console.WriteLine($"Размер папки '{folderPath}': {sizeInBytes} байт");
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
-            Console.WriteLine($"Ошибка при удалении файла '{filePath}': {ex.Message}");
-        }
-    }
-
-    private static void DeleteDirectory(string directoryPath)
-    {
-        try
-        {
-            Directory.Delete(directoryPath);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Ошибка при удалении папки '{directoryPath}': {ex.Message}");
+            Console.WriteLine(ex.Message);
         }
     }
 }
